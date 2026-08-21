@@ -6,7 +6,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Token-first design system for egui — the shadcn language reimplemented natively."
-repository = "https://github.com/Type-zero-labs/ouroboros-ui"
+repository = "https://github.com/Genxster1998/ouroboros-ui"
 
 [dependencies]
 egui = "0.34.1"
