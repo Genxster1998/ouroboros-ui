@@ -208,11 +208,12 @@ impl Size {
             Size::Lg => ICON_LG,
         }
     }
-    /// Horizontal padding (px) — tighter at `Sm`.
+    /// Horizontal padding (px) — tighter, modern compact spacing.
     pub fn pad_x(self) -> f32 {
         match self {
-            Size::Sm => SPACE_3,
-            Size::Md | Size::Lg => SPACE_4,
+            Size::Sm => SPACE_2,
+            Size::Md => SPACE_3,
+            Size::Lg => SPACE_4,
         }
     }
 }

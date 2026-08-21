@@ -39,7 +39,15 @@ impl Theme {
     /// Apply the resolved theme (visuals + stored tokens + text styles) for `mode`,
     /// without re-registering fonts. Use this to switch [`Mode`] at runtime.
     pub fn apply(ctx: &egui::Context, mode: Mode) {
-        let theme = Self::resolve(mode);
+        Self::apply_with_primary(ctx, mode, None);
+    }
+
+    /// Apply the resolved theme with an optional primary accent color override.
+    pub fn apply_with_primary(ctx: &egui::Context, mode: Mode, primary: Option<egui::Color32>) {
+        let mut theme = Self::resolve(mode);
+        if let Some(p) = primary {
+            theme = theme.with_primary(p);
+        }
 
         // Switch egui's own Dark/Light theme so its built-in chrome (clear color,
         // native widgets, scrollbars) follows the mode too.
@@ -54,6 +62,8 @@ impl Theme {
             style.visuals.window_fill = theme.card;
             style.visuals.extreme_bg_color = theme.muted;
             style.visuals.faint_bg_color = theme.card;
+            style.visuals.selection.bg_fill = theme.primary;
+            style.visuals.selection.stroke = egui::Stroke::new(1.0, theme.primary_foreground);
 
             style
                 .text_styles

@@ -21,6 +21,7 @@ pub struct Input<'a> {
     error: bool,
     enabled: bool,
     size: Size,
+    width: Option<f32>,
     id_source: Option<Id>,
 }
 
@@ -32,8 +33,14 @@ impl<'a> Input<'a> {
             error: false,
             enabled: true,
             size: Size::default(),
+            width: None,
             id_source: None,
         }
+    }
+
+    pub fn width(mut self, width: f32) -> Self {
+        self.width = Some(width);
+        self
     }
 
     pub fn placeholder(mut self, text: impl Into<String>) -> Self {
@@ -70,9 +77,10 @@ impl<'a> Input<'a> {
         let theme = Theme::get(ui);
         let height = self.size.height();
         let pad_x = self.size.pad_x();
-        // Fill the panel, but never shrink below the intrinsic floor (text needs room,
-        // so there is deliberately no cap).
-        let width = ui.available_width().max(layout::INPUT_MIN_W);
+        // Fill the panel or use explicit width, but never shrink below the intrinsic floor.
+        let width = self
+            .width
+            .unwrap_or_else(|| ui.available_width().max(layout::INPUT_MIN_W));
 
         let (rect, box_resp) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
         let dim = |c: Color32| {

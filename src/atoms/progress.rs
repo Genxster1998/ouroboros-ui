@@ -4,13 +4,15 @@
 use crate::tokens::core;
 use crate::tokens::layout;
 use crate::Theme;
-use egui::{vec2, CornerRadius, Rect, Response, Sense, Shape, Stroke, Ui, Vec2};
+use egui::{vec2, Color32, CornerRadius, Rect, Response, Sense, Shape, Stroke, Ui, Vec2};
 
 /// A determinate progress indicator (`fraction` in `0..=1`).
 pub struct Progress {
     fraction: f32,
     steps: Option<usize>,
     circular: Option<f32>,
+    color: Option<Color32>,
+    bg_color: Option<Color32>,
 }
 
 impl Progress {
@@ -19,7 +21,19 @@ impl Progress {
             fraction: fraction.clamp(0.0, 1.0),
             steps: None,
             circular: None,
+            color: None,
+            bg_color: None,
         }
+    }
+    /// Custom fill color (defaults to `theme.primary`).
+    pub fn color(mut self, color: Color32) -> Self {
+        self.color = Some(color);
+        self
+    }
+    /// Custom track background color (defaults to `theme.muted`).
+    pub fn bg_color(mut self, bg: Color32) -> Self {
+        self.bg_color = Some(bg);
+        self
     }
     /// Render as `n` discrete segments.
     pub fn steps(mut self, n: usize) -> Self {
@@ -39,13 +53,16 @@ impl Progress {
 
     pub fn show(self, ui: &mut Ui) -> Response {
         let theme = Theme::get(ui);
+        let fill_col = self.color.unwrap_or(theme.primary);
+        let track_bg = self.bg_color.unwrap_or(theme.muted);
+
         if let Some(size) = self.circular {
             let (rect, response) = ui.allocate_exact_size(vec2(size, size), Sense::hover());
             let thickness = core::SPACE_1;
             let center = rect.center();
             let r = size / 2.0 - thickness / 2.0;
             let painter = ui.painter();
-            painter.circle_stroke(center, r, Stroke::new(thickness, theme.muted));
+            painter.circle_stroke(center, r, Stroke::new(thickness, track_bg));
             if self.fraction > 0.0 {
                 let start = -std::f32::consts::FRAC_PI_2;
                 let sweep = self.fraction * std::f32::consts::TAU;
@@ -56,7 +73,7 @@ impl Progress {
                         center + Vec2::angled(a) * r
                     })
                     .collect();
-                painter.add(Shape::line(points, Stroke::new(thickness, theme.primary)));
+                painter.add(Shape::line(points, Stroke::new(thickness, fill_col)));
             }
             return response;
         }
@@ -69,11 +86,11 @@ impl Progress {
         let painter = ui.painter();
         match self.steps {
             None => {
-                painter.rect_filled(rect, pill, theme.muted);
+                painter.rect_filled(rect, pill, track_bg);
                 let fill_w = rect.width() * self.fraction;
                 if fill_w > 0.0 {
                     let fill = Rect::from_min_size(rect.min, vec2(fill_w, height));
-                    painter.rect_filled(fill, pill, theme.primary);
+                    painter.rect_filled(fill, pill, fill_col);
                 }
             }
             Some(n) => {
@@ -83,11 +100,7 @@ impl Progress {
                 for i in 0..n {
                     let x = rect.left() + i as f32 * (seg_w + gap);
                     let seg = Rect::from_min_size(egui::pos2(x, rect.top()), vec2(seg_w, height));
-                    let color = if i < filled {
-                        theme.primary
-                    } else {
-                        theme.muted
-                    };
+                    let color = if i < filled { fill_col } else { track_bg };
                     painter.rect_filled(seg, pill, color);
                 }
             }

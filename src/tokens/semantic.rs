@@ -143,6 +143,21 @@ impl Theme {
         }
     }
 
+    /// Override the primary accent hue and derive contrasting foreground, hover, and ring.
+    pub fn with_primary(mut self, primary: Color32) -> Self {
+        self.primary = primary;
+        let luminance =
+            0.299 * primary.r() as f32 + 0.587 * primary.g() as f32 + 0.114 * primary.b() as f32;
+        self.primary_foreground = if luminance > 160.0 {
+            core::ZINC_950
+        } else {
+            core::ZINC_50
+        };
+        self.primary_hover = primary.gamma_multiply(1.15);
+        self.ring = primary;
+        self
+    }
+
     /// The light (zinc) palette — off-white surfaces, dark text & primary.
     pub fn light() -> Self {
         Self {

@@ -1,6 +1,4 @@
 # ouroboros-ui — standalone design system crate (shadcn-for-egui, token-first).
-# Intentionally its own workspace root: zero dependency on the monorepo workspace.
-[workspace]
 
 [package]
 name = "ouroboros-ui"

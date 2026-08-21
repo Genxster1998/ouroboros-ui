@@ -27,12 +27,14 @@ pub enum BadgeVariant {
     Info,
 }
 
-/// A static badge pill. Builder; `show` returns the [`Response`].
+/// A static badge. Builder; `show` returns the [`Response`].
 pub struct Badge {
     text: String,
     variant: BadgeVariant,
     dot: bool,
     size: Size,
+    is_pill: bool,
+    custom_radius: Option<f32>,
 }
 
 impl Badge {
@@ -42,6 +44,8 @@ impl Badge {
             variant: BadgeVariant::default(),
             dot: false,
             size: Size::default(),
+            is_pill: false,
+            custom_radius: None,
         }
     }
 
@@ -83,6 +87,16 @@ impl Badge {
     pub fn info(self) -> Self {
         self.variant(BadgeVariant::Info)
     }
+    /// Force pill shape (fully rounded ends).
+    pub fn pill(mut self) -> Self {
+        self.is_pill = true;
+        self
+    }
+    /// Custom corner radius.
+    pub fn radius(mut self, radius: f32) -> Self {
+        self.custom_radius = Some(radius);
+        self
+    }
     /// Show a colored leading dot (status badge).
     pub fn dot(mut self) -> Self {
         self.dot = true;
@@ -103,12 +117,13 @@ impl Badge {
             BadgeVariant::Info => BadgeTokens::info(&theme),
         };
 
-        // Padding + text style scale with Size; Md preserves the original look.
-        let (pad, text_style) = match self.size {
-            Size::Sm => (vec2(core::SPACE_2, core::SPACE_1), typography::caption()),
-            Size::Md => (vec2(core::SPACE_2, core::SPACE_1), typography::caption()),
-            Size::Lg => (vec2(core::SPACE_3, core::SPACE_1), typography::label()),
+        // Padding + text style scale with Size; control height aligns with buttons in the same row.
+        let text_style = match self.size {
+            Size::Sm => typography::caption(),
+            Size::Md => typography::caption(),
+            Size::Lg => typography::label(),
         };
+        let pad_x = self.size.pad_x();
         let gap = core::SPACE_1;
         let dot_d = core::SPACE_2;
 
@@ -132,24 +147,32 @@ impl Badge {
         let text_size = galley.size();
 
         let content_w = if self.dot { dot_d + gap } else { 0.0 } + text_size.x;
-        let size = vec2(content_w + 2.0 * pad.x, text_size.y + 2.0 * pad.y);
+        let height = self.size.height();
+        let size = vec2(content_w + 2.0 * pad_x, height);
         let (rect, response) = ui.allocate_exact_size(size, Sense::hover());
 
-        let pill = CornerRadius::same((rect.height() / 2.0) as u8);
+        let corner_radius = if let Some(r) = self.custom_radius {
+            CornerRadius::same(r as u8)
+        } else if self.is_pill {
+            CornerRadius::same((rect.height() / 2.0) as u8)
+        } else {
+            CornerRadius::same(core::RADIUS_SM as u8)
+        };
+
         let painter = ui.painter().clone();
         if bt.fill.a() > 0 {
-            painter.rect_filled(rect, pill, bt.fill);
+            painter.rect_filled(rect, corner_radius, bt.fill);
         }
         if bt.border.a() > 0 {
             painter.rect_stroke(
                 rect,
-                pill,
+                corner_radius,
                 Stroke::new(core::BORDER_THIN, bt.border),
                 StrokeKind::Inside,
             );
         }
 
-        let mut x = rect.left() + pad.x;
+        let mut x = rect.left() + pad_x;
         if self.dot {
             painter.circle_filled(
                 pos2(x + dot_d / 2.0, rect.center().y),
